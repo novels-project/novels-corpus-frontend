@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block page_title %}Volume: {{work.title}} ({{ work.date }}) (Vol. {{ volume.volume }} of {{ volume.total_volumes }}){% endblock %}
+
+{% block content %}
+<div class="container content">
+  <div class="row">
+    <div class="col-md-6">
+
+      <h2>{{ work.title|truncate(90) }}</h2>
+      <ul>
+        <li>Volume: {{ volume.volume }} of {{ volume.volume_count }}</li>
+        <li>Author: {{ work.author }}</li>
+        <li>Year: {{ work.year }}</li>
+      </ul>
+      <a class="btn btn-primary" href="{{ novels_api_addr }}/text/{{ volume.sha1 }}">Download full text</a>
+
+      <h3>Volume detail</h3>
+      <ul>
+        <li>Internet Archive identifier: <a href="https://archive.org/details/{{ volume.internet_archive_id }}">{{ volume.internet_archive_id }}</a></li>
+        <li>
+          Notes
+          <span class="glyphicon glyphicon-info-sign" aria-hidden="true" title="Notes concerning this particular scan"></span>
+          <ul>
+            {% for key, value in volume.extra_info.items() %}
+            <li>{{ key }}: {{ value }}</li>
+            {% endfor %}
+          </ul>
+        </li>
+        <li>Associated work:
+          <ul>
+            <li>Publisher: {{ work.publication }}</li>
+            <li>Year: {{ work.year }}</li>
+            <li>Novels Project identifier: {{ work.id }} </li>
+          </ul>
+        </li>
+      </ul>
+
+    </div>
+    <div class="col-md-6">
+      {# 'gut' in volume.internet_archive_id is a vile hack to not embed when embedding is not available #}
+      {% if 'internet_archive_id' in volume and not 'gut' in volume.internet_archive_id  %}
+        <iframe src="https://www.archive.org/stream/{{ volume.internet_archive_id }}?ui=embed" width="100%" height="480px"></iframe>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block page_title %}Novels Project{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <p>The <strong>Novels Project</strong> gathers digitizations of novels
+        published between 1770 and 1915.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <h2 id="about">About</h2>
+
+      <p>The <strong>Novels Project</strong> gathers and commissions
+      digitizations (scans and digital editions) of novels published between
+      1770 and 1915. Currently the project focuses on collecting a
+      representative sample (i.e., a simple random sample) of novels published in the
+      British Isles between 1800 and 1836.</p>
+
+      <p>Thousands of novels published between 1770 and 1915 survive in library
+      collections around the globe. For example, of the 2,903 novels published
+      between 1800 and 1836 in the British Isles, ninety-nine percent survive.
+      Only a bare majority have been scanned.</p>
+
+    </div>
+    <div class="col-md-6">
+      <h3>Status</h3>
+      <ul>
+        <li><a href="/works"><span class="badge">{{ stats.novels_with_scan_count }}</span> novels with scans</a></li>
+        <li><span class="badge">{{ stats.novels_count }}</span> bibliographic records</li>
+        <li><span class="badge">{{ stats.volumes_count }}</span> scanned volumes</li>
+        <li>Most recent change on {{ stats.date_most_recent_change }} <span id="from-now"></span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <h2 id="contribute">Contribute</h2>
+
+      <p>Contributions are welcome. Please <a href="https://github.com/novels-project/novels-corpus/issues">open an
+      issue GitHub</a> if you have located a digitization suitable for inclusion.</p>
+
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <h2 id="api">API</h2>
+      <p>The <strong>API endpoint</strong> <tt>{{ novels_api_addr }}</tt> exposes the following resources:</p>
+      <p>
+        <ul>
+          <li><tt>/work/</tt> returns JSON of all {{ stats.novels_count }} bibliographic records with metadata on scanned volumes.</li>
+          <li><tt>/text/{SHA1}</tt> returns the full text of the volume uniquely identified by its SHA1 hash.</li>
+        </ul>
+      </p>
+      <p><strong>Bulk data access</strong> is available and welcomed. The Novels Project database is backed by a <a href="https://github.com/novels-project/novels-corpus">git repository</a>. You can clone that repository or download a snapshot.</p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <h2 id="acknowledgments">Acknowledgments</h2>
+
+      <p>Thanks to Laura Braunstein and the Dartmouth Libraries for help in the
+      digitization of <em>Zulma</em> (1813).</p>
+
+    </div>
+  </div>
+
+</div>
+
+
+{% endblock %}
+
+{% block extra_javascript %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.min.js"></script>
+<script>
+$(function() {
+  $("#from-now").html('(' + moment("{{ stats.date_most_recent_change }}", "YYYY-MM-DD").fromNow() + ')');
+});
+</script>
+
+{% endblock %}
