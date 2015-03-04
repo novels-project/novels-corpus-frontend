@@ -4,6 +4,7 @@ import json
 import os
 
 import bottle
+import cherrypy
 import cherrypy.process.plugins
 import requests
 
@@ -12,11 +13,13 @@ NOVELS_API_ADDR = os.environ.get('NOVELS_API_ADDR', None)
 PROJECT_DIR = os.path.dirname(__name__)
 STATIC_DIR = os.path.join(PROJECT_DIR, 'static')
 
-DEBUG = os.environ.get('DEBUG', False)
+TRUE_VALUES = {'yes', '1', 'true'}
+DEBUG = os.environ.get('DEBUG', False) in TRUE_VALUES
 
-works = dict()
-works_with_scans = dict()
-volumes_by_sha1 = dict()
+# global variables
+works = None
+works_with_scans = None
+volumes_by_sha1 = None
 stats = dict()
 
 
@@ -26,19 +29,23 @@ if NOVELS_API_ADDR is None:
 def update_database():
     """Update the in-memory 'database' of novels and volumes"""
     global works, works_with_scans, volumes_by_sha1, stats
+
     print("Starting database update")
     works_url = NOVELS_API_ADDR + '/work/'
     works_json = requests.get(works_url, verify=False).json()
     # the dictionary key should be an integer but JSON can't represent this
     works_items = [(int(k), v) for k, v in works_json.items()]
     works_items.sort(key=lambda pair: pair[1]['year'])
-    works = collections.OrderedDict(works_items)
-    works_with_scans = works.copy()
+
+    works_new = collections.OrderedDict(works_items)
+    volumes_by_sha1_new = {}
+    works_with_scans_new = works_new.copy()
+
     novels_count = 0
     novels_with_scan_count = 0
     volumes_count = 0
     timestamp_most_recent = datetime.datetime.strptime('1970-1-1', '%Y-%m-%d')
-    for key, work in works.items():
+    for key, work in works_new.items():
         novels_count += 1
         if 'volumes' in work:
             volumes_count += len(work['volumes'])
@@ -47,14 +54,18 @@ def update_database():
                 # add a reference to the work in each volume record
                 vol['work'] = work
                 sha1 = vol['sha1']
-                if sha1 in volumes_by_sha1:
+                if sha1 in volumes_by_sha1_new:
                     raise ValueError("Encountered duplicate SHA1 {} for volume:\n{}".format(sha1, vol))
-                assert sha1 not in volumes_by_sha1
-                volumes_by_sha1[sha1] = vol
+                assert sha1 not in volumes_by_sha1_new
+                volumes_by_sha1_new[sha1] = vol
                 timestamp = datetime.datetime.strptime(vol['date_updated'], '%Y-%m-%d')
                 timestamp_most_recent = max(timestamp_most_recent, timestamp)
         else:
-            del works_with_scans[key]
+            del works_with_scans_new[key]
+
+    works = works_new
+    works_with_scans = works_with_scans_new
+    volumes_by_sha1 = volumes_by_sha1_new
 
     stats['date_most_recent_change'] = timestamp_most_recent.strftime('%Y-%m-%d')
     stats['novels_count'] = novels_count
@@ -92,6 +103,7 @@ if __name__ == '__main__':
     if DEBUG:
         bottle.run(debug=True, host='0.0.0.0', port=8080)
     else:
+        print("Setting up database refresh worker")
         update_runner = cherrypy.process.plugins.Monitor(cherrypy.engine, update_database, frequency=3600 * 24)
-        update_runner.subscribe()
+        update_runner.start()
         bottle.run(server='cherrypy', host='0.0.0.0', port=8080)
